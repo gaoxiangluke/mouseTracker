@@ -53,7 +53,9 @@ int main()
 										  // [0 0 0  1]
 										  // observe it is an identity matrix with dT inputs that we will provide later
 	cv::setIdentity(KF.transitionMatrix);
-
+    double dt = 2;
+    KF.transitionMatrix.at<float>(0,2) = dt;
+    KF.transitionMatrix.at<float>(1,3) = dt;
 	// Measurement Matrix (This is C or H matrix)
 	// size of C is measSize x stateSize
 	// only those values will set which we can get as measurement in a state vector
@@ -139,6 +141,6 @@ int main()
             CV_RGB(0, 0, 255), //font color
             1);
 
-		ch = cv::waitKey(1);
+		ch = cv::waitKey(dt);
 	}
 }

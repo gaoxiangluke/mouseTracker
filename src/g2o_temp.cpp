@@ -15,18 +15,17 @@ include <iostream>
 using namespace std;
 
 // state vertex x,y
-class StateVertex : public g2o::BaseVertex<4, SE2> {
+class StateVertex : public g2o::BaseVertex<2,Eigen::Vector2d,StateVertex > {
    public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
-    virtual void setToOriginImpl() override { _estimate = SE2(); }
+    virtual void setToOriginImpl() override {
+    _estimate << 0, 0;
+  }
 
     /// left multiplication on SE3
     virtual void oplusImpl(const double *update) override {
-        Eigen::Vector4d update_eigen;
-        update_eigen << update[0], update[1], update[2], update[3], update[4],
-            update[5];
-        _estimate = SE2::exp(update_eigen) * _estimate;
+       _estimate += Eigen::Vector2d(update);
     }
 
     virtual bool read(std::istream &in) override { return true; }
@@ -45,8 +44,8 @@ public:
   // 计算曲线模型误差
   virtual void computeError() override {
     const  StateVertex *v = static_cast<const  StateVertex *> (_vertices[0]);
-    const Eigen::Vector3d T = v->estimate();
-    _error(0, 0) = _measurement - T * _pos2d;
+    const Eigen::Vector3d dT = v->estimate();
+    _error(0, 0) = _measurement - (pose + dT);
   }
 
 //   // 计算雅可比矩阵
@@ -64,5 +63,5 @@ public:
   virtual bool write(ostream &out) const {}
 
 public:
-  double _x;  // x 值， y 值为 _measurement
+  double _pos2d;  // x 值， y 值为 _measurement
 };

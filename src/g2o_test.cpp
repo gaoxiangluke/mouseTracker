@@ -49,15 +49,15 @@ public:
     _error(0, 0) = _measurement - std::exp(abc(0, 0) * _x * _x + abc(1, 0) * _x + abc(2, 0));
   }
 
-  // 计算雅可比矩阵
-  virtual void linearizeOplus() override {
-    const CurveFittingVertex *v = static_cast<const CurveFittingVertex *> (_vertices[0]);
-    const Eigen::Vector3d abc = v->estimate();
-    double y = exp(abc[0] * _x * _x + abc[1] * _x + abc[2]);
-    _jacobianOplusXi[0] = -_x * _x * y;
-    _jacobianOplusXi[1] = -_x * y;
-    _jacobianOplusXi[2] = -y;
-  }
+  // // 计算雅可比矩阵
+  // virtual void linearizeOplus() override {
+  //   const CurveFittingVertex *v = static_cast<const CurveFittingVertex *> (_vertices[0]);
+  //   const Eigen::Vector3d abc = v->estimate();
+  //   double y = exp(abc[0] * _x * _x + abc[1] * _x + abc[2]);
+  //   _jacobianOplusXi[0] = -_x * _x * y;
+  //   _jacobianOplusXi[1] = -_x * y;
+  //   _jacobianOplusXi[2] = -y;
+  // }
 
   virtual bool read(istream &in) {}
 

@@ -26,9 +26,9 @@ void on_mouse(int e, int x, int y, int d, void *ptr)
 int main()
 {
 	// >>> Kalman Filter Initialization
-	int stateSize = 4;  // [x, y, v_x, v_y]
+	int stateSize = 4;  // [x, y, d_x, d_y]
 	int measSize = 2;   // [z_x, z_y] // we will only measure mouse cursor x and y
-	int contrSize = 0;  // no control input
+	int contrSize = 0;  // no control input1
 
 	unsigned int F_type = CV_32F;
 
@@ -36,7 +36,7 @@ int main()
 	cv::KalmanFilter KF(stateSize, measSize, contrSize, F_type);
 
 	// creating state vector
-	cv::Mat state(stateSize, 1, F_type);  // [x, y, v_x, v_y] // column Matrix
+	cv::Mat state(stateSize, 1, F_type);  // [x, y, d_x, d_y] // column Matrix
 
 										  // creating measurement vector
 	cv::Mat meas(measSize, 1, F_type);    // [z_x, z_y] // column matrix
@@ -47,15 +47,15 @@ int main()
 										  // X_k = current state := x_k, y_k, v_x_k
 										  // X_k-1 = previous state
 										  // A =
-										  // [1 0 dT 0]
-										  // [0 1 0 dT]
+										  // [1 0 1 0]
+										  // [0 1 0 1]
 										  // [0 0 1  0]
 										  // [0 0 0  1]
 										  // observe it is an identity matrix with dT inputs that we will provide later
 	cv::setIdentity(KF.transitionMatrix);
     double dt = 2;
-    KF.transitionMatrix.at<float>(0,2) = dt;
-    KF.transitionMatrix.at<float>(1,3) = dt;
+    KF.transitionMatrix.at<float>(0,2) = 1;
+    KF.transitionMatrix.at<float>(1,3) = 1;
 	// Measurement Matrix (This is C or H matrix)
 	// size of C is measSize x stateSize
 	// only those values will set which we can get as measurement in a state vector
@@ -141,6 +141,9 @@ int main()
             CV_RGB(0, 0, 255), //font color
             1);
 
-		ch = cv::waitKey(dt);
+		if((char)cv::waitKey(1) == 27){
+            cout <<"end program" << endl;
+            return 0; 
+        }
 	}
 }

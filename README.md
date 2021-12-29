@@ -27,6 +27,7 @@ $$\min_{T}\frac{1}{2}\sum^N_{i=1}||y_i - T*x_i||^2$$
 I modeled T as vertices in g2o, and each edge is an error module defined above. 
 This optimization actually doesn't have a really good result, as the module is very simple, but the goal is simply practice procedure on setting up a least square optimization problem with g2o. 
 # Result
+![plot](./images/1.png)
 # Current Task
 This project completed the given goal.
 [[Mouse Detection Project task and resource]]

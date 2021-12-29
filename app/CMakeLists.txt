@@ -1,2 +1,2 @@
-# add_executable(hello_w.app run_hello_world.cpp)
-# target_link_libraries(hello_w.app hello)
+add_executable(mouseTracking.app mouseTracking.cpp)
+target_link_libraries(mouseTracking.app   optimizer  ${THIRD_PARTY_LIBS})

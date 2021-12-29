@@ -14,21 +14,29 @@
 #include <Eigen/Core>
 #include <cmath>
 #include <chrono>
+#include <sophus/se2.hpp>
+#include <sophus/so2.hpp>
+
+typedef Sophus::SE2d SE2;
+typedef Sophus::SO2d SO2;
+
 using namespace cv;
 using namespace std;
 
 // state vertex x,y
-class StateVertex : public g2o::BaseVertex<2,Eigen::Vector2d > {
+class StateVertex : public g2o::BaseVertex<3, SE2> {
    public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW;
 
     virtual void setToOriginImpl() override {
-    _estimate << 0, 0;
+    _estimate = SE2();
   }
 
     /// left multiplication on SE3
     virtual void oplusImpl(const double *update) override {
-       _estimate += Eigen::Vector2d(update);
+        Eigen::Matrix<double, 3, 1> update_eigen;
+        update_eigen << update[0], update[1], update[2];
+        _estimate = SE2::exp(update_eigen) * _estimate;
     }
 
     virtual bool read(std::istream &in) override { return true; }
@@ -47,13 +55,13 @@ public:
   // 计算曲线模型误差
   virtual void computeError() override {
     const  StateVertex *v = static_cast<const  StateVertex *> (_vertices[0]);
-    const Eigen::Vector2d dT = v->estimate();
+	SE2 T = v->estimate();
 	Eigen::Vector2d current;
-	current[0] = _pos2d[0] + dT[0];
-	current[1] = _pos2d[1] + dT[1];
+	current = T *_pos2d;
     //_error(0, 0) = pow(_measurement[0] - current[0],2) + pow(_measurement[1] - current[1],2);
-	_error(0, 0)= abs(_measurement[0] - current[0]);
-	_error(1, 0)= abs(_measurement[1] - current[1]);
+	// _error(0, 0)= abs(_measurement[0] - current[0]);
+	// _error(1, 0)= abs(_measurement[1] - current[1]);
+	_error = _measurement - current;
   }
   virtual bool read(istream &in) {}
 
@@ -158,7 +166,7 @@ int main()
 
 	// g2o releated	
 	// set up graph optimization, start with block and linear solver 
-	typedef g2o::BlockSolver<g2o::BlockSolverTraits<2, 2>> BlockSolverType;  // every vertex dim is 2, error is 2
+	typedef g2o::BlockSolver<g2o::BlockSolverTraits<3, 2>> BlockSolverType;  // every vertex dim is 2, error is 2
   	typedef g2o::LinearSolverDense<BlockSolverType::PoseMatrixType> LinearSolverType; // type of linear solve
 
 	// gradient descent use GaussNewton
@@ -216,10 +224,10 @@ int main()
 			line(display_image, mousev[i], mousev[i + 1], Scalar(0, 0, 255), 1);
 		for (int i = 0; i < truev.size() - 1; i++)
 			line(display_image, truev[i], truev[i + 1], Scalar(0, 255, 255), 1);
-		for (int i = 0; i < kalmanv.size() - 1; i++)
-			line(display_image, kalmanv[i], kalmanv[i + 1], Scalar(255, 0, 0), 1);
 		for (int i = 0; i < graphv.size() - 1; i++)
 			line(display_image, graphv[i], graphv[i + 1], Scalar(0, 255, 0), 1);
+		for (int i = 0; i < kalmanv.size() - 1; i++)
+			line(display_image, kalmanv[i], kalmanv[i + 1], Scalar(255, 0, 0), 1);
         cv::putText(display_image, //target image
             "Prediction-KF", //text
             cv::Point(10, 20), //top-left position
@@ -260,7 +268,7 @@ int main()
 			// }
 			StateVertex* vertex_state = new StateVertex();  // camera vertex_pose
         	vertex_state->setId(0);
-			Eigen::Vector2d estimate = {0,0};
+			SE2 estimate = SE2();
         	vertex_state->setEstimate(estimate);
         	optimizer.addVertex(vertex_state);
         	//vertices.push_back(vertex_state);	
@@ -283,14 +291,16 @@ int main()
   			chrono::duration<double> time_used = chrono::duration_cast<chrono::duration<double>>(t2 - t1);
   			cout << "solve time cost = " << time_used.count() << " seconds. " << endl;
 
-  			// 输出优化值
-  			Eigen::Vector2d displacement_estimate =  vertex_state->estimate();
-  			cout << "estimated model: " << displacement_estimate.transpose() << endl;
+  			// // 输出优化值
+  			SE2 T =  vertex_state->estimate();
+  			cout << "estimated model: " << T.matrix()<< endl;
 			//add edges
 			graphv = kalmanv;
 			for (int i = 0; i < graphv.size(); i++){
-				graphv[i].x += displacement_estimate[0];
-				graphv[i].y += displacement_estimate[1];
+				Eigen::Vector2d point = point_to_vector2d(graphv[i]);
+				point = T*point;
+				graphv[i].x = point[0];
+				graphv[i].y = point[1];
 			}
 				
 				
